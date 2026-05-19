@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Questionnaire JCE 2026</title>
+    <style>
+        body{ font-family:Arial; text-align:center; background:#f0f0f0; }
+        .container{ background:white; padding:20px; margin:50px auto; width:500px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.3); }
+        #timer{ color:red; font-weight:bold; font-size:20px; }
+        input{ padding:10px; width:80%; margin:10px 0; }
+        button{ padding:10px 20px; background:green; color:white; border:none; cursor:pointer; }
+        button:hover{ background:darkgreen; }
+        .hidden{ display:none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="inscription">
+    <h1>Inscription au Questionnaire JCE 2026</h1>
+    <input type="text" id="nom" placeholder="Nom complet">
+    <input type="text" id="section" placeholder="Section">
+    <button id="startBtn">Commencer le Questionnaire</button>
+</div>
+
+<div class="container hidden" id="quizContainer">
+    <h1>Questionnaire JCE 2026</h1>
+    <p id="timer">15:00</p>
+    <h2 id="rubrique"></h2>
+    <p id="question"></p>
+    <input type="text" id="rep" placeholder="Votre réponse ici">
+    <br>
+    <button id="btnValider">Valider</button>
+    <p id="resultat"></p>
+</div>
+
+<script>
+// ================= CONFIG SUPABASE =================
+const SUPABASE_URL = "https://ggukautbbdjfajvvuncp.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdndWthdXRiYmRqZmFqdnZ1bmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMDY0MDQsImV4cCI6MjA5NDY4MjQwNH0.1ttDXIinB1X_qSxZzf37ru-KlB1tn_aDjCVdolzOETI";
+
+// ================= QUESTIONS =================
+const quiz = [
+    {rubrique:"Islamique", question:"Qu'est-ce que les Asbab an-Nuzul et pourquoi leur connaissance est-elle indispensable ?"},
+    {rubrique:"Islamique", question:"Pourquoi la sourate Al-Fatiha est-elle obligatoire dans chaque raka'a de la priere ?"},
+    {rubrique:"Islamique", question:"Comment le Coran etait-il preserve du vivant du Prophete (s.a.w.)?"},
+    {rubrique:"Islamique", question:"Comment la memorisation du Coran (hifz) peut-elle changer la vie quotidienne ?"},
+    {rubrique:"Islamique", question:"Quels sont les piliers (arkan) du Hajj et quelles lecons de vie en tirer ?"},
+    {rubrique:"Islamique", question:"Comment le recit d'Ayyub (a.s.) aide-t-il un lyceen a faire face aux echecs ?"},
+    {rubrique:"Islamique", question:"Pourquoi Fatima az-Zahra' (r.a.) est-elle appelee 'maitresse des femmes du Paradis' ?"},
+    {rubrique:"AEEMCI", question:"Quel est le slogan de l'AEEMCI ?"},
+    {rubrique:"AEEMCI", question:"Combien de secretariats regionaux comptent l'AEEMCI ?"},
+    {rubrique:"AEEMCI", question:"Où s'est déroulée la journée hommage dédiée à la militante AEEMCiste ?"},
+    {rubrique:"AEEMCI", question:"Objectif principal de l'AEEMCI ?"},
+    {rubrique:"AEEMCI", question:"Quel était le thème principal du SERFIM 2026?"},
+    {rubrique:"AEEMCI", question:"Quel est le nom complet de l'actuel président du sous-comité de Treichville ?"},
+    {rubrique:"Académique", question:"Pourquoi l'Afrique de l'Ouest est-elle un berceau de grandes civilisations islamiques?"},
+    {rubrique:"Académique", question:"Qui est l'actuel vice-premier ministre de la republique de Côte d'Ivoire ?"},
+    {rubrique:"Académique", question:"Combien y a-t-il de degrés dans un triangle ?"},
+    {rubrique:"Académique", question:"[ANGLAIS] Traduis : 'Knowledge is power."},
+    {rubrique:"Académique", question:"À quoi sert l'intelligence artificielle ?"},
+    {rubrique:"Académique", question:"Citez deux(2) milieux de terrain ivoiriens sélectionnés pour la Coupe du monde 2026 ?"},
+    {rubrique:"Académique", question:"Donnez le synonyme du mot 'Villegiatures' ?"}
+];
+
+let index = 0;
+let tempsInitial = 15 * 60;
+let tempsRestant = tempsInitial;
+let timerInterval;
+let reponsesCandidat = [];
+
+const inscriptionEl = document.getElementById("inscription");
+const quizEl = document.getElementById("quizContainer");
+const rubriqueEl = document.getElementById("rubrique");
+const questionEl = document.getElementById("question");
+const repEl = document.getElementById("rep");
+const timerEl = document.getElementById("timer");
+const btnValider = document.getElementById("btnValider");
+const startBtn = document.getElementById("startBtn");
+
+startBtn.addEventListener("click",()=>{
+    const nom = document.getElementById("nom").value.trim();
+    const section = document.getElementById("section").value.trim();
+    if(!nom || !section){ alert("Veuillez remplir votre nom et votre section."); return; }
+    inscriptionEl.classList.add("hidden");
+    quizEl.classList.remove("hidden");
+    afficherQuestion();
+    timerInterval = setInterval(majTimer,1000);
+});
+
+function afficherQuestion(){
+    if(index >= quiz.length){ finQuiz(); return; }
+    rubriqueEl.textContent = quiz[index].rubrique;
+    questionEl.textContent = quiz[index].question;
+    repEl.value = "";
+    repEl.focus();
+}
+
+btnValider.addEventListener("click",()=>{
+    reponsesCandidat.push({
+        question: quiz[index].question,
+        reponse: repEl.value.trim()
+    });
+    index++;
+    afficherQuestion();
+});
+
+function majTimer(){
+    let min = Math.floor(tempsRestant / 60);
+    let sec = tempsRestant % 60;
+    timerEl.textContent = min + ":" + (sec < 10 ? "0" : "") + sec;
+    if(tempsRestant <= 0){ clearInterval(timerInterval); alert("Temps écoulé !"); finQuiz(); }
+    tempsRestant--;
+}
+
+async function finQuiz(){
+    clearInterval(timerInterval);
+    const nom = document.getElementById("nom").value.trim();
+    const section = document.getElementById("section").value.trim();
+
+    // Calcul du temps mis
+    let secondesMises = tempsInitial - tempsRestant;
+    let minMises = Math.floor(secondesMises / 60);
+    let secMises = secondesMises % 60;
+    let tempsMisTexte = `${minMises}min ${secMises}s`;
+
+    rubriqueEl.textContent = "";
+    questionEl.textContent = "Envoi en cours...";
+    repEl.style.display = "none";
+    btnValider.style.display = "none";
+
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/resultat`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+                nom: nom,
+                section: section,
+                reponses: reponsesCandidat,
+                temps_mis: tempsMisTexte, // Nouvelle colonne
+                note: null
+            })
+        });
+
+        if (!response.ok) throw new Error("Erreur serveur");
+
+        questionEl.textContent = "Questionnaire terminé";
+        document.getElementById("resultat").innerHTML = `Merci à la section <b>${section}</b>. Vos réponses ont été transmises au jury.`;
+    } catch (error) {
+        alert("Erreur lors de l'envoi : " + error.message);
+        questionEl.textContent = "Erreur d'envoi";
+    }
+}
+
+document.addEventListener("visibilitychange",()=>{
+    if(document.hidden && index < quiz.length && !quizEl.classList.contains("hidden")){
+        alert("Triche détectée ! Questionnaire terminé.");
+        finQuiz();
+    }
+});
+</script>
+</body>
+</html>
